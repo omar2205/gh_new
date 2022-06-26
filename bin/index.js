@@ -6,35 +6,32 @@
 import chalk from 'chalk'
 import minimist from 'minimist'
 import fetch from 'node-fetch'
+import { getGitUser, logger } from '../utils/index.js'
 
 const argv = minimist(process.argv.slice(2))
+const API = 'https://api.github.com/user'
 
-const logger = msg => console.log('>>', msg)
-
-const { p, y } = argv
+// args, -p set public repo, nossh: to get clone URL vs ssh_URL
+const { p, nossh } = argv
 
 if (argv._.length !== 1) {
   logger(`${chalk.red.bold('ERR')}: no repo name was given`)
-  process.exit(-1)
+  process.exit(1)
 }
 
 const repo_name = argv._[0]
 
 p ? logger('Settings repo to public') : ''
-y ? logger('Will init repo after creation') : ''
-
-// start the thing
-
-const API = 'https://api.github.com/user'
-const USER_NAME = 'omar2205'
-const USER_TOKEN = process.env.CR_PAT || process.env.GITHUB_TOKEN || null
-
-if (!USER_TOKEN) {
-  logger('ERR: no Github token (no GITHUB_TOKEN or CR_PAT env)')
-  process.exit(-2)
-}
 
 const main = async () => {
+  const USER_NAME = getGitUser()
+  const USER_TOKEN = process.env.CR_PAT || process.env.GITHUB_TOKEN || null
+
+  if (!USER_TOKEN) {
+    logger('ERR: no Github token (no GITHUB_TOKEN or CR_PAT env)')
+    process.exit(2)
+  }
+
   const USER_AUTH = Buffer.from(`${USER_NAME}:${USER_TOKEN}`).toString('base64')
   const payload = {
     name: repo_name,
@@ -54,21 +51,23 @@ const main = async () => {
 
 try {
   const res = await main()
-  if (y) {
+
+  if (nossh) {
     console.log(
-      `${chalk.green('Run:')}
-      git remote add origin ${res.ssh_url}
-      git branch -M main
-      git push -u origin main`
+      `>> ${chalk.green('Run:')}
+  git remote add origin ${res.clone_url}
+  git branch -M main
+  git push -u origin main`
     )
-  } else if(y === 'no-ssh') {
+  } else {
     console.log(
-      `${chalk.green('Run:')}
-      git remote add origin ${res.clone_url}
-      git branch -M main
-      git push -u origin main`
+      `>> ${chalk.green('Run:')}
+  git remote add origin ${res.ssh_url}
+  git branch -M main
+  git push -u origin main`
     )
   }
 } catch (err) {
-  console.err(err)
+  console.error(err)
+  process.exit(4)
 }
