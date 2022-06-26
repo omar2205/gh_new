@@ -51,7 +51,7 @@ const main = async () => {
 
 try {
   const res = await main()
-
+ 
   if (nossh) {
     console.log(
       `>> ${chalk.green('Run:')}

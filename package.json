@@ -1,5 +1,5 @@
 {
-  "name": "gh_new",
+  "name": "@oskr.nl/gh_new",
   "version": "1.0.0",
   "description": "Quickly create new Github repo",
   "type": "module",
